@@ -1,6 +1,6 @@
-# Saturday afternoon tinker with SpriteKit.
+# Saturday afternoon tinker with SpriteKit.
 
-## or...
+## or...
 
 # Mutant Alient Chicken Attack
 
