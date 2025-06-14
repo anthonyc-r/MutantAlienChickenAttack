@@ -6,10 +6,15 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		4139038D2DFDD63D00D9BA7F /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 4139038C2DFDD63A00D9BA7F /* README.md */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		413903242DFD8B2100D9BA7F /* MutantAlientChickenAttack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MutantAlientChickenAttack.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		413903352DFD8B2100D9BA7F /* MutantAlientChickenAttack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MutantAlientChickenAttack.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		413903452DFD8B2100D9BA7F /* MutantAlientChickenAttack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MutantAlientChickenAttack.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4139038C2DFDD63A00D9BA7F /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -89,6 +94,11 @@
 			path = "MutantAlientChickenAttack macOS";
 			sourceTree = "<group>";
 		};
+		4139038E2DFDD64A00D9BA7F /* Screenshots */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Screenshots;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -119,6 +129,8 @@
 		413903162DFD8B1F00D9BA7F = {
 			isa = PBXGroup;
 			children = (
+				4139038E2DFDD64A00D9BA7F /* Screenshots */,
+				4139038C2DFDD63A00D9BA7F /* README.md */,
 				4139031B2DFD8B1F00D9BA7F /* MutantAlientChickenAttack Shared */,
 				413903262DFD8B2100D9BA7F /* MutantAlientChickenAttack iOS */,
 				413903362DFD8B2100D9BA7F /* MutantAlientChickenAttack tvOS */,
@@ -154,6 +166,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				413903262DFD8B2100D9BA7F /* MutantAlientChickenAttack iOS */,
+				4139038E2DFDD64A00D9BA7F /* Screenshots */,
 			);
 			name = "MutantAlientChickenAttack iOS";
 			packageProductDependencies = (
@@ -253,6 +266,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4139038D2DFDD63D00D9BA7F /* README.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
