@@ -15,6 +15,13 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
     
     private var activeKeys = Set<KeyCode>()
     private var lastFire = Date()
+    private var stage = 0
+    private var health = 5 {
+        didSet {
+            healthBar.text = "Lives: " + String(repeating: "🐔", count: max(0, health))
+        }
+    }
+    private var gameStart = Date()
 
     
     class func newGameScene() -> CoupScene {
@@ -118,6 +125,15 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
             }
         }
         
+        if let player = player, gameStart.addingTimeInterval(5) < Date() {
+            health -= 1
+            if health < 1 {
+                print("Game over")
+                
+                view?.presentScene(GameOverScene.newGameScene(), transition: SKTransition.crossFade(withDuration: 1))
+            }
+        }
+        
         if let egg = egg {
             egg.run(SKAction.sequence([
                 SKAction.fadeOut(withDuration: 1.0),
@@ -143,6 +159,10 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
     
     private var buildingMap: SKTileMapNode {
         return childNode(withName: "building_map") as! SKTileMapNode
+    }
+    
+    private var healthBar: SKLabelNode {
+        return self.childNode(withName: "health_background")!.childNode(withName: "health_label") as! SKLabelNode
     }
     
     override func keyUp(with event: NSEvent) {
@@ -203,10 +223,10 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
                 }
             }
             
-            if let lastFire = enemy.userData?["lastFire"] as? Date, lastFire.timeIntervalSinceNow > -5 {
+            if let lastFire = enemy.userData?["nextFire"] as? Date, lastFire.timeIntervalSinceNow > 0 {
                 
             } else {
-                enemy.userData?["lastFire"] = Date()
+                enemy.userData?["nextFire"] = Date(timeIntervalSinceNow: TimeInterval(3 + (0..<3).randomElement()!))
                 fireProjectile(from: enemy, vector: vec, true)
             }
         }
