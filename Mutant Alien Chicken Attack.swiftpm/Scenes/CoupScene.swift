@@ -1,4 +1,6 @@
 import SpriteKit
+import SwiftUI
+import Combine
 
 class CoupScene: SKScene, SKPhysicsContactDelegate {
     private let tileSize = CGSize(width: 64, height: 64)
@@ -19,9 +21,8 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
             healthBar.text = "Lives: " + String(repeating: "🐔", count: max(0, health))
         }
     }
-    private var gameStart = Date() 
-
-    
+    private var gameStart = Date()
+    private var direction = CGSize.zero
     
     override func sceneDidLoad() {
         super.sceneDidLoad()
@@ -162,13 +163,15 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
         updateEnemies()
     }
     
-    override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
-        for press in presses {
-            if let codeVal = press.key?.keyCode {
-                if let keyCode = KeyCode(uiKeyCode: codeVal) {
-                    activeKeys.insert(keyCode)                    
-                }
-            }
+    func setDirection(_ direction: CGSize) {
+        self.direction = direction
+    }
+    
+    func setActionPressed(_ isPressed: Bool) {
+        if isPressed {
+            activeKeys.insert(.space)
+        } else {
+            activeKeys.remove(.space)
         }
     }
     
@@ -183,19 +186,22 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
     }
     
     private func updatePlayer() {
-        if let vector = Direction(fromKeys: activeKeys)?.vector {
-            player.physicsBody?.velocity = CGVector(dx: 200 * vector.dx, dy: 200 * vector.dy)
-            if vector.dx > 0 {
+        let vector = direction
+        if vector != .zero {
+            print("Vec: \(vector.width), \(vector.height)")
+            player.physicsBody?.velocity = CGVector(dx: 200 * vector.width, dy: 200 * vector.height)
+            if vector.width > 0 {
                 player.xScale = -1
-            } else if vector.dx < 0 {
+            } else if vector.width < 0 {
                 player.xScale = 1
             }
             
             if activeKeys.contains(.space) && lastFire.timeIntervalSinceNow < -0.5 {
-                fireProjectile(from: player, vector: vector)
+                fireProjectile(from: player, vector: CGVector(dx: vector.width, dy: vector.height))
                 lastFire = Date()
             }
         } else {
+            print("zero")
             player.physicsBody?.velocity = .zero
         }
     }
