@@ -93,7 +93,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 4139031A2DFD8B1F00D9BA7F /* Build configuration list for PBXProject "MutantAlientChickenAttack" */;
+			buildConfigurationList = 4139031A2DFD8B1F00D9BA7F /* Build configuration list for PBXProject "MutantAlienChickenAttack" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -334,7 +334,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		4139031A2DFD8B1F00D9BA7F /* Build configuration list for PBXProject "MutantAlientChickenAttack" */ = {
+		4139031A2DFD8B1F00D9BA7F /* Build configuration list for PBXProject "MutantAlienChickenAttack" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				413903672DFD8B2100D9BA7F /* Debug */,
