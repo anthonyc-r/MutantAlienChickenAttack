@@ -7,14 +7,24 @@
 
 import SwiftUI
 import SpriteKit
+import Combine
+
+class ViewModel: ObservableObject {
+    @Published var direction: CGSize = .zero
+    @Published var actionPressed: Bool = false
+}
 
 struct ContentView: View {
     @State var direction: CGSize = .zero
     @State var actionPressed: Bool = false
     
+    @ObservedObject var viewModel = ViewModel()
+        
     var body: some View {
         ZStack {
-            SpriteView(scene: CoupScene.newGameScene())
+            SpriteView(scene: CoupScene.newGameScene(viewModel))
+                .frame(width: Dimension.tileSize.width * 15, height: 10 * Dimension.tileSize.height)
+#if os(iOS)
             VStack {
                 Spacer()
                 HStack {
@@ -23,6 +33,13 @@ struct ContentView: View {
                     ActionButton(isPressed: $actionPressed)
                 }
             }
+#endif
+        }
+        .onChange(of: direction) {
+            viewModel.direction = direction
+        }
+        .onChange(of: actionPressed) {
+            viewModel.actionPressed = actionPressed
         }
     }
 }

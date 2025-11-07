@@ -7,7 +7,9 @@
 import SpriteKit
 
 class GameOverScene: SKScene {
-    class func newGameScene() -> GameOverScene {
+    private var viewModel: ViewModel!
+    
+    class func newGameScene(_ viewModel: ViewModel) -> GameOverScene {
         // Load 'GameScene.sks' as an SKScene.
         guard let scene = SKScene(fileNamed: "GameOverScene") as? GameOverScene else {
             print("Failed to load GameOverScene.sks")
@@ -16,6 +18,7 @@ class GameOverScene: SKScene {
         
         // Set the scale mode to scale to fit the window
         scene.scaleMode = .aspectFill
+        scene.viewModel = viewModel
         return scene
     }
     
@@ -29,10 +32,15 @@ class GameOverScene: SKScene {
             SKAction.fadeAlpha(to: 1.0, duration: 1)
         ])))
     }
-    
+}
+
+
+#if os(OSX)
+extension GameOverScene {
     override func keyUp(with event: NSEvent) {
         if KeyCode(rawValue: event.keyCode) == .space {
-            view?.presentScene(CoupScene.newGameScene(), transition: SKTransition.reveal(with: .down, duration: 1))
+            view?.presentScene(CoupScene.newGameScene(viewModel), transition: SKTransition.reveal(with: .down, duration: 1))
         }
     }
 }
+#endif

@@ -6,13 +6,12 @@
 //
 
 import SpriteKit
+import Combine
+import AVFoundation
 
 class CoupScene: SKScene, SKPhysicsContactDelegate {
-    
-    
-    fileprivate var label : SKLabelNode?
-    fileprivate var spinnyNode : SKShapeNode?
-    
+    private var backgroundMusicPlayer: AVAudioPlayer?
+    private var viewModel: ViewModel!
     private var activeKeys = Set<KeyCode>()
     private var lastFire = Date()
     private var stage = 0
@@ -22,9 +21,15 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
         }
     }
     private var gameStart = Date()
-
+    private var observations = [AnyCancellable]()
+    private var player: PlayerSprite!
     
-    class func newGameScene() -> CoupScene {
+    
+    deinit {
+        backgroundMusicPlayer?.stop()
+    }
+    
+    class func newGameScene(_ viewModel: ViewModel) -> CoupScene {
         // Load 'GameScene.sks' as an SKScene.
         guard let scene = SKScene(fileNamed: "CoupScene") as? CoupScene else {
             print("Failed to load CoupScene.sks")
@@ -33,36 +38,25 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
         
         // Set the scale mode to scale to fit the window
         scene.scaleMode = .aspectFill
+        scene.viewModel = viewModel
         
+        scene.observations.append(viewModel.$direction.sink { [weak scene] val in
+            scene?.setDirection(val)
+        })
+        scene.observations.append(viewModel.$actionPressed.sink { [weak scene] val in
+            scene?.setAction(val)
+        })
         
         return scene
     }
     
     func setUpScene() {
-        
-        // Create shape node to use during mouse interaction
-        let w = (self.size.width + self.size.height) * 0.05
-        self.spinnyNode = SKShapeNode.init(rectOf: CGSize.init(width: w, height: w), cornerRadius: w * 0.3)
-        
-        if let spinnyNode = self.spinnyNode {
-            spinnyNode.lineWidth = 4.0
-            spinnyNode.run(SKAction.repeatForever(SKAction.rotate(byAngle: CGFloat(Double.pi), duration: 1)))
-            spinnyNode.run(SKAction.sequence([SKAction.wait(forDuration: 0.5),
-                                              SKAction.fadeOut(withDuration: 0.5),
-                                              SKAction.removeFromParent()]))
-        }
-        children.compactMap { $0 as? SKTileMapNode }.forEach {
-            $0.blendMode = .alpha
-        }
         physicsWorld.contactDelegate = self
         addCollisionBodies(from: buildingMap)
-        player.physicsBody = SKPhysicsBody(rectangleOf: Dimension.tileSize)
-        player.physicsBody?.isDynamic = true
-        player.physicsBody?.affectedByGravity = false
-        player.physicsBody?.allowsRotation = false
-        player.physicsBody?.categoryBitMask = PhysicsCategory.player
-        player.physicsBody?.collisionBitMask = PhysicsCategory.building
-        player.physicsBody?.contactTestBitMask = PhysicsCategory.building
+        playBackgroundMusic()
+        player = PlayerSprite(healthContianer)
+        camera = player.camera
+        addChild(player)
     }
     
     func addCollisionBodies(from tileMap: SKTileMapNode) {
@@ -96,14 +90,6 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
     override func didMove(to view: SKView) {
         self.setUpScene()
     }
-
-    func makeSpinny(at pos: CGPoint, color: SKColor) {
-        if let spinny = self.spinnyNode?.copy() as! SKShapeNode? {
-            spinny.position = pos
-            spinny.strokeColor = color
-            self.addChild(spinny)
-        }
-    }
     
     func didBegin(_ contact: SKPhysicsContact) {
         guard let nodeA = contact.bodyA.node, let nodeB = contact.bodyB.node else { return }
@@ -125,17 +111,18 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
             }
         }
         
-        if let player = player, gameStart.addingTimeInterval(5) < Date() {
+        if let _ = player, gameStart.addingTimeInterval(5) < Date() {
             health -= 1
             if health < 1 {
                 print("Game over")
                 
-                view?.presentScene(GameOverScene.newGameScene(), transition: SKTransition.crossFade(withDuration: 1))
+                view?.presentScene(GameOverScene.newGameScene(viewModel), transition: SKTransition.crossFade(withDuration: 1))
             }
         }
         
         if let egg = egg {
             egg.run(SKAction.sequence([
+                SKAction.setTexture(SKTexture(imageNamed: "Egg Broken")),
                 SKAction.fadeOut(withDuration: 1.0),
                 SKAction.removeFromParent()
             ]))
@@ -148,13 +135,45 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
         updateEnemies()
     }
     
+    func setDirection(_ vector: CGSize) {
+        activeKeys.remove(.rightArrow)
+        activeKeys.remove(.leftArrow)
+        activeKeys.remove(.upArrow)
+        activeKeys.remove(.downArrow)
+        
+        let threshold: CGFloat = 0.5
+        
+        if vector.width < -threshold {
+            activeKeys.insert(.leftArrow)
+        } else if vector.width > threshold {
+            activeKeys.insert(.rightArrow)
+        }
+        if vector.height > threshold {
+            activeKeys.insert(.upArrow)
+        } else if vector.height < -threshold {
+            activeKeys.insert(.downArrow)
+        }
+    }
+    
+    func setAction(_ active: Bool) {
+        if active {
+            activeKeys.insert(.space)
+        } else {
+            activeKeys.remove(.space)
+        }
+    }
+    
+    private func playBackgroundMusic() {
+        let url = Bundle.main.url(forResource: "Background", withExtension: "m4a")!
+        backgroundMusicPlayer?.stop()
+        backgroundMusicPlayer = try! AVAudioPlayer(contentsOf: url)
+        backgroundMusicPlayer!.numberOfLoops = -1 // loop forever
+        backgroundMusicPlayer!.volume = 0.5
+        backgroundMusicPlayer!.play()
+    }
     
     private var tileMap: SKTileMapNode {
         return childNode(withName: "tile_map") as! SKTileMapNode
-    }
-    
-    private var player: SKNode {
-        return childNode(withName: "player")!
     }
     
     private var buildingMap: SKTileMapNode {
@@ -162,30 +181,15 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
     }
     
     private var healthBar: SKLabelNode {
-        return self.childNode(withName: "health_background")!.childNode(withName: "health_label") as! SKLabelNode
+        return descendant(withName: "health_label") as! SKLabelNode
     }
-    
-    override func keyUp(with event: NSEvent) {
-        if let keyCode = KeyCode(rawValue: event.keyCode) {
-            activeKeys.remove(keyCode)
-        }
-    }
-    
-    override func keyDown(with event: NSEvent) {
-        if let keyCode = KeyCode(rawValue: event.keyCode) {
-            activeKeys.insert(keyCode)
-        }
+    private var healthContianer: SKNode {
+        return childNode(withName: "health_background")!
     }
     
     private func updatePlayer() {
         if let vector = Direction(fromKeys: activeKeys)?.vector {
-            player.physicsBody?.velocity = CGVector(dx: 200 * vector.dx, dy: 200 * vector.dy)
-            if vector.dx > 0 {
-                player.xScale = -1
-            } else if vector.dx < 0 {
-                player.xScale = 1
-            }
-            
+            player.setDirection(vector)
             if activeKeys.contains(.space) && lastFire.timeIntervalSinceNow < -0.5 {
                 fireProjectile(from: player, vector: vector)
                 lastFire = Date()
@@ -273,59 +277,20 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
     }
 }
 
-#if os(iOS) || os(tvOS)
-// Touch-based event handling
-extension GameScene {
-
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if let label = self.label {
-            label.run(SKAction.init(named: "Pulse")!, withKey: "fadeInOut")
-        }
-        
-        for t in touches {
-            self.makeSpinny(at: t.location(in: self), color: SKColor.green)
-        }
-    }
-    
-    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches {
-            self.makeSpinny(at: t.location(in: self), color: SKColor.blue)
-        }
-    }
-    
-    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches {
-            self.makeSpinny(at: t.location(in: self), color: SKColor.red)
-        }
-    }
-    
-    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches {
-            self.makeSpinny(at: t.location(in: self), color: SKColor.red)
-        }
-    }
-    
-   
-}
-#endif
-
 #if os(OSX)
 // Mouse-based event handling
 extension CoupScene {
 
-    override func mouseDown(with event: NSEvent) {
-        if let label = self.label {
-            label.run(SKAction.init(named: "Pulse")!, withKey: "fadeInOut")
+    override func keyUp(with event: NSEvent) {
+        if let keyCode = KeyCode(rawValue: event.keyCode) {
+            activeKeys.remove(keyCode)
         }
-        self.makeSpinny(at: event.location(in: self), color: SKColor.green)
     }
-    
-    override func mouseDragged(with event: NSEvent) {
-        self.makeSpinny(at: event.location(in: self), color: SKColor.blue)
-    }
-    
-    override func mouseUp(with event: NSEvent) {
-        self.makeSpinny(at: event.location(in: self), color: SKColor.red)
+
+    override func keyDown(with event: NSEvent) {
+        if let keyCode = KeyCode(rawValue: event.keyCode) {
+            activeKeys.insert(keyCode)
+        }
     }
 
 }

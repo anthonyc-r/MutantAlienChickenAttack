@@ -29,5 +29,4 @@ class Textures {
     var grass: SKTileGroup {
         return SKTileGroup(tileDefinition: SKTileDefinition(texture: atlas.textureNamed("Grass"), size: CGSize(width: 128, height: 128)))
     }
-    
 }

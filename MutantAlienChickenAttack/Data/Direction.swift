@@ -17,6 +17,20 @@ enum Direction: Int, CaseIterable {
     case west
     case north_west
     
+    init?(vector: CGVector) {
+        if vector.dx > 0 {
+            self = .east
+        } else if vector.dx < 0 {
+            self = .west
+        } else if vector.dy > 0 {
+            self = .north
+        } else if vector.dy < 0 {
+            self = .south
+        } else {
+            self = .north
+        }
+    }
+    
     init?(fromKeys keys: Set<KeyCode>) {
         switch (keys.contains(.upArrow), keys.contains(.downArrow), keys.contains(.leftArrow), keys.contains(.rightArrow)) {
         case (true, false, false, false):
