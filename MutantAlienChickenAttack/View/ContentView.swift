@@ -12,6 +12,9 @@ import Combine
 class ViewModel: ObservableObject {
     @Published var direction: CGSize = .zero
     @Published var actionPressed: Bool = false
+    @Published var tapLocation: CGPoint?
+    @Published var keyDown: KeyPress?
+    @Published var keyUp: KeyPress?
 }
 
 struct ContentView: View {
@@ -36,10 +39,31 @@ struct ContentView: View {
 #endif
         }
         .onChange(of: direction) {
-            viewModel.direction = direction
+            Task {
+                viewModel.direction = direction
+            }
         }
         .onChange(of: actionPressed) {
-            viewModel.actionPressed = actionPressed
+            Task {
+                viewModel.actionPressed = actionPressed
+            }
+        }
+        .onTapGesture { location in
+            Task {
+                viewModel.tapLocation = location
+            }
+        }
+        .onKeyPress(phases: .down) { key in
+            Task {
+                viewModel.keyDown = key
+            }
+            return .handled
+        }
+        .onKeyPress(phases: .up) { key in
+            Task {
+                viewModel.keyUp = key
+            }
+            return .handled
         }
     }
 }

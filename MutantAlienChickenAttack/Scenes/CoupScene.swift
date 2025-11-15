@@ -7,6 +7,7 @@
 
 import SpriteKit
 import Combine
+import SwiftUI
 import AVFoundation
 
 class CoupScene: SKScene, SKPhysicsContactDelegate {
@@ -45,6 +46,16 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
         })
         scene.observations.append(viewModel.$actionPressed.sink { [weak scene] val in
             scene?.setAction(val)
+        })
+        scene.observations.append(viewModel.$keyDown.sink { [weak scene] val in
+            if let keycode = KeyCode(val?.key) {
+                scene?.activeKeys.insert(keycode)
+            }
+        })
+        scene.observations.append(viewModel.$keyUp.sink { [weak scene] val in
+            if let keycode = KeyCode(val?.key) {
+                scene?.activeKeys.remove(keycode)
+            }
         })
         
         return scene
@@ -276,23 +287,3 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
         return node
     }
 }
-
-#if os(OSX)
-// Mouse-based event handling
-extension CoupScene {
-
-    override func keyUp(with event: NSEvent) {
-        if let keyCode = KeyCode(rawValue: event.keyCode) {
-            activeKeys.remove(keyCode)
-        }
-    }
-
-    override func keyDown(with event: NSEvent) {
-        if let keyCode = KeyCode(rawValue: event.keyCode) {
-            activeKeys.insert(keyCode)
-        }
-    }
-
-}
-#endif
-

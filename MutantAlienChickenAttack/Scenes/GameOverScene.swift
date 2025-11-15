@@ -5,9 +5,12 @@
 //  Created by Anthony Cohn-Richardby on 14/06/2025.
 //
 import SpriteKit
+import Combine
+import SwiftUI
 
 class GameOverScene: SKScene {
     private var viewModel: ViewModel!
+    private var observations = [AnyCancellable]()
     
     class func newGameScene(_ viewModel: ViewModel) -> GameOverScene {
         // Load 'GameScene.sks' as an SKScene.
@@ -31,16 +34,11 @@ class GameOverScene: SKScene {
             SKAction.fadeAlpha(to: 0.0, duration: 1),
             SKAction.fadeAlpha(to: 1.0, duration: 1)
         ])))
+        observations.append(viewModel.$keyUp.sink { [weak self] val in
+            guard let self = self else { return }
+            if KeyCode(val?.key) == .space {
+                view?.presentScene(CoupScene.newGameScene(viewModel), transition: SKTransition.reveal(with: .down, duration: 1))
+            }
+        })
     }
 }
-
-
-#if os(OSX)
-extension GameOverScene {
-    override func keyUp(with event: NSEvent) {
-        if KeyCode(rawValue: event.keyCode) == .space {
-            view?.presentScene(CoupScene.newGameScene(viewModel), transition: SKTransition.reveal(with: .down, duration: 1))
-        }
-    }
-}
-#endif

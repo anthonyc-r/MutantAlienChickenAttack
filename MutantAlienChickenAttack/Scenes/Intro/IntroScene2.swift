@@ -6,6 +6,7 @@
 //
 import Foundation
 import SpriteKit
+import Combine
 
 class IntroScene2: SKScene {
     private var viewModel: ViewModel!
@@ -13,6 +14,8 @@ class IntroScene2: SKScene {
     private var ship: SKSpriteNode!
     private var space: SKSpriteNode!
     private var seed: SKNode!
+    
+    private var observations = [AnyCancellable]()
     
     class func newGameScene(_ viewModel: ViewModel) -> IntroScene2 {
         // Load 'GameScene.sks' as an SKScene.
@@ -30,6 +33,10 @@ class IntroScene2: SKScene {
         super.didMove(to: view)
         camera = childNode(withName: "camera") as? SKCameraNode
         (childNode(withName: "egg") as? SKSpriteNode)?.texture?.filteringMode = .nearest
+        observations.append(viewModel.$tapLocation.dropFirst().sink { [weak self] _ in
+            guard let self = self else { return }
+            view.presentScene(CoupScene.newGameScene(self.viewModel))
+        })
     }
     
     private func createScene() {
