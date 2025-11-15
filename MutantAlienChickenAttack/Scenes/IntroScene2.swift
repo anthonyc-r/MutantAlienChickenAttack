@@ -29,6 +29,7 @@ class IntroScene2: SKScene {
     override func didMove(to view: SKView) {
         super.didMove(to: view)
         camera = childNode(withName: "camera") as? SKCameraNode
+        (childNode(withName: "egg") as? SKSpriteNode)?.texture?.filteringMode = .nearest
     }
     
     private func createScene() {
