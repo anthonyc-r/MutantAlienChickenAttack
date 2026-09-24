@@ -12,7 +12,7 @@ class PlayerSprite: SKSpriteNode {
     private var currentDirection: Direction?
     
     convenience init(_ healthContainer: SKNode?) {
-        self.init(imageNamed: "chicken_left_1")
+        self.init(imageNamed: "Chicken_Walk_Left_0001")
         
         if let healthContainer = healthContainer {
             let camera = SKCameraNode()
@@ -46,23 +46,22 @@ class PlayerSprite: SKSpriteNode {
         currentDirection = direction
         switch direction {
         case .north:
-            setSprite(basename: "chicken_up")
+            setSprite(basename: "Chicken_Walk_Up")
         case .east:
-            setSprite(basename: "chicken_right")
+            setSprite(basename: "Chicken_Walk_Right")
         case .west:
-            setSprite(basename: "chicken_left")
+            setSprite(basename: "Chicken_Walk_Left")
         case .south:
-            setSprite(basename: "chicken_down")
+            setSprite(basename: "Chicken_Walk_Down")
         default:
             break
         }
     }
     
     private func setSprite(basename: String) {
-        run(SKAction.repeatForever(SKAction.animate(with: [
-            getTexture(name: "\(basename)_1"),
-            getTexture(name: "\(basename)_2")
-        ], timePerFrame: 0.2)))
+        run(SKAction.repeatForever(SKAction.animate(with: (0...13).map { i in
+            return getTexture(name: "\(basename)_\(String(format: "%04d", i))")
+        }, timePerFrame: 0.2)))
     }
     
     private func getTexture(name: String) -> SKTexture {

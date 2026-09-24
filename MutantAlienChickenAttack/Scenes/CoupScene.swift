@@ -234,6 +234,34 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
             let vec = CGVector(dx: abs(dx) / dx, dy: abs(dy) / dy)
             
             
+            func setDirection(_ vector: CGVector) {
+                let direction = Direction(vector: vec)
+                switch direction {
+                case .north:
+                    setSprite(basename: "Chicken_Walk_Up")
+                case .east:
+                    setSprite(basename: "Chicken_Walk_Right")
+                case .west:
+                    setSprite(basename: "Chicken_Walk_Left")
+                case .south:
+                    setSprite(basename: "Chicken_Walk_Down")
+                default:
+                    break
+                }
+            }
+            
+            func setSprite(basename: String) {
+                enemy.run(SKAction.repeatForever(SKAction.animate(with: (0...13).map { i in
+                    return getTexture(name: "\(basename)_\(String(format: "%04d", i))")
+                }, timePerFrame: 0.2)))
+            }
+            
+            func getTexture(name: String) -> SKTexture {
+                let tex = SKTexture(imageNamed: name)
+                tex.filteringMode = .nearest
+                return tex
+            }
+            
             if let lastWonder = enemy.userData?["lastWonder"] as? Date, lastWonder.timeIntervalSinceNow > -2 {
                 
             } else {
@@ -280,7 +308,7 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
     }
     
     private func spawnEnemy() -> SKNode {
-        let node = SKSpriteNode(imageNamed: "Chicken2")
+        let node = SKSpriteNode(imageNamed: "Chicken_Walk_Left_0001")
         node.userData = ["type": "enemy", "hp": 3]
         node.size = Dimension.tileSize
         node.position = .zero
