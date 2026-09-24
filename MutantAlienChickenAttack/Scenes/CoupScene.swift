@@ -68,6 +68,9 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
         player = PlayerSprite(healthContianer)
         camera = player.camera
         addChild(player)
+        for _ in 0..<5 {
+            _ = spawnEnemy()
+        }
     }
     
     func addCollisionBodies(from tileMap: SKTileMapNode) {
@@ -144,6 +147,12 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
         // Called before each frame is rendered
         updatePlayer()
         updateEnemies()
+        if enemies.count < 1 {
+            Task {
+                try? await Task.sleep(for: .seconds(2))
+                fatalError("Completed")
+            }
+        }
     }
     
     func setDirection(_ vector: CGSize) {
@@ -210,15 +219,14 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
         }
     }
     
-    private func updateEnemies() {
-        var enemies = children.filter {
+    private var enemies: [SKNode] {
+        return children.filter {
             $0.userData?["type"] as? String == "enemy"
         }
-        
-        if enemies.count < 4 {
-            enemies.append(spawnEnemy())
-        }
-        
+    }
+    
+    private func updateEnemies() {
+        let enemies = enemies
         enemies.forEach { enemy in
             let dx = player.position.x - enemy.position.x
             let dy = player.position.y - enemy.position.y
