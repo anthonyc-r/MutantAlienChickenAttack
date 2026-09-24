@@ -11,6 +11,7 @@ import SwiftUI
 import AVFoundation
 
 class CoupScene: SKScene, SKPhysicsContactDelegate {
+    private let enemyCount = 3
     private var backgroundMusicPlayer: AVAudioPlayer?
     private var viewModel: ViewModel!
     private var activeKeys = Set<KeyCode>()
@@ -68,7 +69,7 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
         player = PlayerSprite(healthContianer)
         camera = player.camera
         addChild(player)
-        for _ in 0..<5 {
+        for _ in 0..<enemyCount {
             _ = spawnEnemy()
         }
     }
@@ -150,7 +151,7 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
         if enemies.count < 1 {
             Task {
                 try? await Task.sleep(for: .seconds(2))
-                fatalError("Completed")
+                view?.presentScene(CoupTransitionScene.newGameScene(viewModel), transition: SKTransition.crossFade(withDuration: 1))
             }
         }
     }
@@ -260,7 +261,7 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
         node.userData = ["type": "egg", "enemy": enemy]
         node.size = Dimension.tileSize
         node.position = source.position
-        node.physicsBody = SKPhysicsBody(rectangleOf: Dimension.tileSize)
+        node.physicsBody = physicsBody()
         node.physicsBody?.isDynamic = true
         node.physicsBody?.affectedByGravity = false
         if enemy {
@@ -283,7 +284,7 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
         node.userData = ["type": "enemy", "hp": 3]
         node.size = Dimension.tileSize
         node.position = .zero
-        node.physicsBody = SKPhysicsBody(rectangleOf: Dimension.tileSize)
+        node.physicsBody = physicsBody()
         node.physicsBody?.isDynamic = true
         node.physicsBody?.affectedByGravity = false
         node.physicsBody?.allowsRotation = false
@@ -293,5 +294,9 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
 
         addChild(node)
         return node
+    }
+    
+    private func physicsBody() -> SKPhysicsBody {
+        return SKPhysicsBody(rectangleOf: Dimension.tileSize.applying(.identity.scaledBy(x: 0.8, y: 0.8)))
     }
 }
