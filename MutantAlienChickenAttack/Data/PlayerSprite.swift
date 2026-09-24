@@ -8,23 +8,25 @@
 import SpriteKit
 
 class PlayerSprite: SKSpriteNode {
-    private(set) var camera: SKCameraNode!
+    private(set) var camera: SKCameraNode?
     private var currentDirection: Direction?
     
-    convenience init(_ healthContainer: SKNode) {
+    convenience init(_ healthContainer: SKNode?) {
         self.init(imageNamed: "chicken_left_1")
         
-        let camera = SKCameraNode()
-        addChild(camera)
-        healthContainer.removeFromParent()
-        camera.addChild(healthContainer)
-        self.camera = camera
+        if let healthContainer = healthContainer {
+            let camera = SKCameraNode()
+            addChild(camera)
+            healthContainer.removeFromParent()
+            camera.addChild(healthContainer)
+            self.camera = camera
+        }
         
         userData = ["type": "player", "hp": 3]
         size = Dimension.tileSize
         position = .zero
         
-        physicsBody = SKPhysicsBody(rectangleOf: Dimension.tileSize)
+        physicsBody = SKPhysicsBody(rectangleOf: Dimension.tileSize.applying(.identity.scaledBy(x: 0.1, y: 0.8)))
         physicsBody?.isDynamic = true
         physicsBody?.affectedByGravity = false
         physicsBody?.allowsRotation = false
