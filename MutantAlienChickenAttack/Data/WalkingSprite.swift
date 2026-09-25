@@ -17,7 +17,7 @@ class WalkingSprite: SKSpriteNode {
     }
     
     
-    func setDirection(_ vector: CGVector) {
+    func setDirection(_ vector: CGVector, speed: CGFloat? = nil) {
         physicsBody?.velocity = CGVector(dx: 200 * vector.dx, dy: 200 * vector.dy)
 
         let direction = Direction(vector: vector)
@@ -25,22 +25,27 @@ class WalkingSprite: SKSpriteNode {
         currentDirection = direction
         switch direction {
         case .north:
-            setSprite(basename: "\(imageBase)_Up")
+            setSprite(basename: "\(imageBase)_Up", speed: speed)
         case .east:
-            setSprite(basename: "\(imageBase)_Right")
+            setSprite(basename: "\(imageBase)_Right", speed: speed)
         case .west:
-            setSprite(basename: "\(imageBase)_Left")
+            setSprite(basename: "\(imageBase)_Left", speed: speed)
         case .south:
-            setSprite(basename: "\(imageBase)_Down")
+            setSprite(basename: "\(imageBase)_Down", speed: speed)
         default:
             break
         }
     }
     
-    private func setSprite(basename: String) {
+    private func setSprite(basename: String, speed: CGFloat? = nil) {
+        var actualSpeed = speed
+        if let speed = speed {
+            actualSpeed = speed / 200
+        }
+        
         run(SKAction.repeatForever(SKAction.animate(with: (0..<frameCount).map { i in
             return getTexture(name: "\(basename)_\(String(format: "%04d", i))")
-        }, timePerFrame: 0.2)))
+        }, timePerFrame: actualSpeed ?? 0.2)))
     }
     
     private func getTexture(name: String) -> SKTexture {

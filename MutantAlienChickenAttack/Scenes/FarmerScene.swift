@@ -213,7 +213,7 @@ class FarmerScene: SKScene, SKPhysicsContactDelegate {
             let x = ((CGFloat(arc4random()) / CGFloat(UInt32.max)) * (maxX - minX)) + minX
             let dx = x - farmer.position.x
             currentAction = SKAction.group([
-                .run { [weak self] in self?.farmer.setDirection(CGVector(dx: dx, dy: 0))},
+                .run { [weak self] in self?.farmer.setDirection(CGVector(dx: dx, dy: 0), speed: abs(dx / 2))},
                 .moveTo(x: x, duration: 2)
             ])
             self.lastActionType = .seek
