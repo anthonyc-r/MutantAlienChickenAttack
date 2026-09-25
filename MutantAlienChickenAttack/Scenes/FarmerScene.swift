@@ -8,7 +8,7 @@ import SpriteKit
 import Combine
 import SwiftUI
 
-class FarmerScene: SKScene, SKPhysicsContactDelegate {
+class FarmerScene: SKScene, SKPhysicsContactDelegate, ChickenSpawning {
     private var viewModel: ViewModel!
     private var fireAction: SKAction!
     private var farmer: WalkingSprite!
@@ -29,7 +29,16 @@ class FarmerScene: SKScene, SKPhysicsContactDelegate {
         case seek
         case shoot
     }
-    
+    private enum ProjType {
+        case bullet
+        case egg
+        var imageName: String {
+            switch self {
+            case .bullet: return "Bullet"
+            case .egg: return "Egg"
+            }
+        }
+    }
     
     
     
@@ -89,8 +98,9 @@ class FarmerScene: SKScene, SKPhysicsContactDelegate {
         let nodes = [nodeA, nodeB]
         
         
-        let egg = nodes.first { $0.userData?["type"] as? String == "egg" }
+        let _ = nodes.first { $0.userData?["type"] as? String == ProjType.bullet.imageName }
         let enemy = nodes.first { $0.userData?["type"] as? String == "enemy" }
+        let egg = nodes.first { $0.userData?["type"] as? String == ProjType.egg.imageName }
                 
         if let enemy = enemy, let hp = enemy.userData?["hp"] as? Int, egg?.userData?["enemy"] as? Bool == false {
             if hp <= 1 {
@@ -102,9 +112,7 @@ class FarmerScene: SKScene, SKPhysicsContactDelegate {
                 enemy.userData?["hp"] = hp - 1
             }
         }
-        
-
-        health -= 1
+    
         if health < 1 {
             print("Game over")
             
@@ -112,11 +120,7 @@ class FarmerScene: SKScene, SKPhysicsContactDelegate {
         }
         
         if let egg = egg {
-            egg.run(SKAction.sequence([
-                SKAction.setTexture(SKTexture(imageNamed: "Egg Broken")),
-                SKAction.fadeOut(withDuration: 1.0),
-                SKAction.removeFromParent()
-            ]))
+            hatchEgg(egg)
         }
     }
     
@@ -218,10 +222,11 @@ class FarmerScene: SKScene, SKPhysicsContactDelegate {
             ])
             self.lastActionType = .seek
         case .seek:
+            let fireEggs = Bool.random() && Bool.random()
             currentAction = SKAction.group([
                 .animate(with: [SKTexture(imageNamed: "Farmer_Shooting")], timePerFrame: 1),
                 fireAction,
-                .run { [weak self] in self?.createProjectiles() }
+                .run { [weak self] in self?.createProjectiles(type: fireEggs ? .egg : .bullet) }
             ])
             self.lastActionType = .shoot
         }
@@ -232,21 +237,42 @@ class FarmerScene: SKScene, SKPhysicsContactDelegate {
         })
     }
     
-    private func createProjectiles() {
-        let node = SKSpriteNode(imageNamed: "Egg")
-        node.userData = ["type": "egg", "enemy": true]
-        node.size = Dimension.tileSize
-        node.position = farmer.position
-        node.physicsBody = physicsBody()
-        node.physicsBody?.isDynamic = true
-        node.physicsBody?.affectedByGravity = false
-        node.physicsBody?.categoryBitMask = PhysicsCategory.enemyProjectile
-        node.physicsBody?.collisionBitMask = PhysicsCategory.player
-        node.physicsBody?.contactTestBitMask = PhysicsCategory.player
+    private func createProjectiles(type: ProjType = .bullet) {
+        func projectile() -> SKNode {
+            let node = SKSpriteNode(imageNamed: type.imageName)
+            node.userData = ["type": type.imageName, "enemy": true]
+            node.size = Dimension.tileSize
+            node.position = farmer.position
+            node.physicsBody = physicsBody()
+            node.physicsBody?.isDynamic = true
+            node.physicsBody?.affectedByGravity = false
+            node.physicsBody?.categoryBitMask = PhysicsCategory.enemyProjectile
+            node.physicsBody?.collisionBitMask = PhysicsCategory.player
+            node.physicsBody?.contactTestBitMask = PhysicsCategory.player
+            return node
+        }
+        
+        let node1 = projectile()
+        let node2 = projectile()
+        let node3 = projectile()
+        
+        node1.physicsBody?.velocity = CGVector(dx: -400, dy: -400)
+        node1.zRotation = .pi * 0.75
+        node2.physicsBody?.velocity = CGVector(dx: 0, dy: -400)
+        node3.physicsBody?.velocity = CGVector(dx: 400, dy: -400)
+        node3.zRotation = .pi * 0.25
 
-        node.physicsBody?.velocity = CGVector(dx: 0, dy: -400)
-
-        addChild(node)
+        addChild(node1)
+        addChild(node2)
+        addChild(node3)
+    }
+    
+    private func hatchEgg(_ egg: SKNode) {
+        let position = egg.position
+        egg.removeFromParent()
+        _ = spawnEnemy(position, player)
+        _ = spawnEnemy(position, player)
+        _ = spawnEnemy(position, player)
     }
     
     

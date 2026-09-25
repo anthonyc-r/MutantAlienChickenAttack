@@ -25,7 +25,7 @@ struct ContentView: View {
         
     var body: some View {
         ZStack {
-            SpriteView(scene: FarmerScene.newGameScene(viewModel))
+            SpriteView(scene: CoupScene.newGameScene(viewModel))
                 .frame(width: Dimension.tileSize.width * 15, height: 10 * Dimension.tileSize.height)
 #if os(iOS)
             VStack {

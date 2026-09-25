@@ -54,7 +54,7 @@ class CoupTransitionScene: SKScene {
         chickenSprite.position = chickenStart
         chicken = chickenSprite
         Task {
-            try? await Task.sleep(for: .seconds(11))
+            try? await Task.sleep(for: .seconds(13))
             view?.presentScene(FarmerScene.newGameScene(self.viewModel))
         }
     }

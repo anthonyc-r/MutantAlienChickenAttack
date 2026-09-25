@@ -10,7 +10,7 @@ import Combine
 import SwiftUI
 import AVFoundation
 
-class CoupScene: SKScene, SKPhysicsContactDelegate {
+class CoupScene: SKScene, SKPhysicsContactDelegate, ChickenSpawning, ProjectileFiring {
     private let enemyCount = 3
     private var backgroundMusicPlayer: AVAudioPlayer?
     private var viewModel: ViewModel!
@@ -70,7 +70,7 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
         camera = player.camera
         addChild(player)
         for _ in 0..<enemyCount {
-            _ = spawnEnemy()
+            _ = spawnEnemy(player.position, player)
         }
     }
     
@@ -111,8 +111,8 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
         let nodes = [nodeA, nodeB]
         
         
-        let egg = nodes.first { $0.userData?["type"] as? String == "egg" }
-        let player = nodes.first { $0 === self.player }
+        let egg = nodes.first { $0.userData?["type"] as? String == "Egg" }
+        let _ = nodes.first { $0 === self.player }
         let enemy = nodes.first { $0.userData?["type"] as? String == "enemy" }
                 
         if let enemy = enemy, let hp = enemy.userData?["hp"] as? Int, egg?.userData?["enemy"] as? Bool == false {
@@ -126,7 +126,7 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
             }
         }
         
-        if let _ = player, gameStart.addingTimeInterval(5) < Date() {
+        if let _ = player, let egg = egg, egg.userData?["enemy"] as? Bool == true , gameStart.addingTimeInterval(5) < Date() {
             health -= 1
             if health < 1 {
                 print("Game over")
@@ -136,6 +136,8 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
         }
         
         if let egg = egg {
+            egg.userData?["enemy"] = nil
+            egg.userData?["type"] = nil
             egg.run(SKAction.sequence([
                 SKAction.setTexture(SKTexture(imageNamed: "Egg Broken")),
                 SKAction.fadeOut(withDuration: 1.0),
@@ -147,7 +149,6 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
     override func update(_ currentTime: TimeInterval) {
         // Called before each frame is rendered
         updatePlayer()
-        updateEnemies()
         if enemies.count < 1 {
             Task {
                 try? await Task.sleep(for: .seconds(2))
@@ -224,104 +225,6 @@ class CoupScene: SKScene, SKPhysicsContactDelegate {
         return children.filter {
             $0.userData?["type"] as? String == "enemy"
         }
-    }
-    
-    private func updateEnemies() {
-        let enemies = enemies
-        enemies.forEach { enemy in
-            let dx = player.position.x - enemy.position.x
-            let dy = player.position.y - enemy.position.y
-            let vec = CGVector(dx: abs(dx) / dx, dy: abs(dy) / dy)
-            
-            
-            func setDirection(_ vector: CGVector) {
-                let direction = Direction(vector: vec)
-                switch direction {
-                case .north:
-                    setSprite(basename: "Chicken_Walk_Up")
-                case .east:
-                    setSprite(basename: "Chicken_Walk_Right")
-                case .west:
-                    setSprite(basename: "Chicken_Walk_Left")
-                case .south:
-                    setSprite(basename: "Chicken_Walk_Down")
-                default:
-                    break
-                }
-            }
-            
-            func setSprite(basename: String) {
-                enemy.run(SKAction.repeatForever(SKAction.animate(with: (0...13).map { i in
-                    return getTexture(name: "\(basename)_\(String(format: "%04d", i))")
-                }, timePerFrame: 0.2)))
-            }
-            
-            func getTexture(name: String) -> SKTexture {
-                let tex = SKTexture(imageNamed: name)
-                tex.filteringMode = .nearest
-                return tex
-            }
-            
-            if let lastWonder = enemy.userData?["lastWonder"] as? Date, lastWonder.timeIntervalSinceNow > -2 {
-                
-            } else {
-                enemy.userData?["lastWonder"] = Date()
-                let dir = Direction.allCases.randomElement()!.vector
-                enemy.physicsBody?.velocity = CGVector(dx: 100 * dir.dx, dy: 100 * dir.dy)
-                if dir.dx > 0 {
-                    enemy.xScale = -1
-                } else if dir.dx < 0 {
-                    enemy.xScale = 1
-                }
-            }
-            
-            if let lastFire = enemy.userData?["nextFire"] as? Date, lastFire.timeIntervalSinceNow > 0 {
-                
-            } else {
-                enemy.userData?["nextFire"] = Date(timeIntervalSinceNow: TimeInterval(3 + (0..<3).randomElement()!))
-                fireProjectile(from: enemy, vector: vec, true)
-            }
-        }
-    }
-    
-    private func fireProjectile(from source: SKNode, vector: CGVector, _ enemy: Bool = false) {
-        let node = SKSpriteNode(imageNamed: "Egg")
-        node.userData = ["type": "egg", "enemy": enemy]
-        node.size = Dimension.tileSize
-        node.position = source.position
-        node.physicsBody = physicsBody()
-        node.physicsBody?.isDynamic = true
-        node.physicsBody?.affectedByGravity = false
-        if enemy {
-            node.physicsBody?.categoryBitMask = PhysicsCategory.enemyProjectile
-            node.physicsBody?.collisionBitMask = 0xFFFF ^ PhysicsCategory.enemy
-            node.physicsBody?.contactTestBitMask = 0xFFFF ^ PhysicsCategory.enemy
-        } else {
-            node.physicsBody?.categoryBitMask = PhysicsCategory.playerProjectile
-            node.physicsBody?.collisionBitMask = 0xFFFF ^ PhysicsCategory.player
-            node.physicsBody?.contactTestBitMask = 0xFFFF ^ PhysicsCategory.player
-        }
-
-        node.physicsBody?.velocity = CGVector(dx: 400 * vector.dx, dy: 400 * vector.dy)
-
-        addChild(node)
-    }
-    
-    private func spawnEnemy() -> SKNode {
-        let node = SKSpriteNode(imageNamed: "Chicken_Walk_Left_0001")
-        node.userData = ["type": "enemy", "hp": 3]
-        node.size = Dimension.tileSize
-        node.position = .zero
-        node.physicsBody = physicsBody()
-        node.physicsBody?.isDynamic = true
-        node.physicsBody?.affectedByGravity = false
-        node.physicsBody?.allowsRotation = false
-        node.physicsBody?.categoryBitMask = PhysicsCategory.enemy
-        node.physicsBody?.collisionBitMask = 0xFFFF ^ PhysicsCategory.enemyProjectile
-        node.physicsBody?.contactTestBitMask = 0xFFFF ^ PhysicsCategory.enemyProjectile
-
-        addChild(node)
-        return node
     }
     
     private func physicsBody() -> SKPhysicsBody {

@@ -11,8 +11,9 @@ import SwiftUI
 class GameOverScene: SKScene {
     private var viewModel: ViewModel!
     private var observations = [AnyCancellable]()
+    private var level: Int = 0
     
-    class func newGameScene(_ viewModel: ViewModel) -> GameOverScene {
+    class func newGameScene(_ viewModel: ViewModel, _ level: Int = 0) -> GameOverScene {
         // Load 'GameScene.sks' as an SKScene.
         guard let scene = SKScene(fileNamed: "GameOverScene") as? GameOverScene else {
             print("Failed to load GameOverScene.sks")
@@ -22,6 +23,7 @@ class GameOverScene: SKScene {
         // Set the scale mode to scale to fit the window
         scene.scaleMode = .aspectFill
         scene.viewModel = viewModel
+        scene.level = level
         return scene
     }
     
@@ -37,7 +39,13 @@ class GameOverScene: SKScene {
         observations.append(viewModel.$keyUp.sink { [weak self] val in
             guard let self = self else { return }
             if KeyCode(val?.key) == .space {
-                view?.presentScene(CoupScene.newGameScene(viewModel), transition: SKTransition.reveal(with: .down, duration: 1))
+                switch level {
+                case 1:
+                    view?.presentScene(FarmerScene.newGameScene(viewModel), transition: SKTransition.reveal(with: .down, duration: 1))
+                default:
+                    view?.presentScene(CoupScene.newGameScene(viewModel), transition: SKTransition.reveal(with: .down, duration: 1))
+                }
+                
             }
         })
     }

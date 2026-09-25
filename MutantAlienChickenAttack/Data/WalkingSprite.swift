@@ -40,7 +40,7 @@ class WalkingSprite: SKSpriteNode {
     private func setSprite(basename: String, speed: CGFloat? = nil) {
         var actualSpeed = speed
         if let speed = speed {
-            actualSpeed = speed / 200
+            actualSpeed = (1 - min(1, speed / 600)) / 2
         }
         
         run(SKAction.repeatForever(SKAction.animate(with: (0..<frameCount).map { i in
