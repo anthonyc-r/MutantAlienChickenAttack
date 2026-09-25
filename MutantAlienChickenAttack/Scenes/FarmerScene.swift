@@ -8,11 +8,30 @@ import SpriteKit
 import Combine
 import SwiftUI
 
-class FarmerScene: SKScene {
+class FarmerScene: SKScene, SKPhysicsContactDelegate {
     private var viewModel: ViewModel!
-    private var observations = [AnyCancellable]()
+    private var fireAction: SKAction!
+    private var farmer: WalkingSprite!
     private var player: PlayerSprite!
+    
+    private var observations = [AnyCancellable]()
+    
     private var activeKeys = Set<KeyCode>()
+    private var activeBullets = [SKNode]()
+    private var currentAction: SKAction?
+    private var lastAction: SKAction?
+    private var lastActionType: ActionType = .start
+    
+    private var health = 4
+    
+    private enum ActionType {
+        case start
+        case seek
+        case shoot
+    }
+    
+    
+    
     
     class func newGameScene(_ viewModel: ViewModel) -> FarmerScene {
         // Load 'GameScene.sks' as an SKScene.
@@ -39,6 +58,19 @@ class FarmerScene: SKScene {
                 scene?.activeKeys.remove(keycode)
             }
         })
+        scene.farmer = scene.childNode(withName: "shooting_farmer") as? WalkingSprite
+        scene.farmer.imageBase = "Farmer_Walk"
+        scene.farmer.frameCount = 7
+        scene.physicsWorld.contactDelegate = scene
+        scene.fireAction = .group([
+            // A bump up and down
+            .sequence([.moveBy(x: 0, y: 20, duration: 0.2), .moveBy(x: 0, y: -20, duration: 0.2)]),
+            .sequence([.wait(forDuration: 0.1), .run(.sequence([
+                .unhide(),
+                .wait(forDuration: 0.1),
+                .hide()
+            ]), onChildWithName: "flash")])
+        ])
         return scene
     }
     
@@ -49,8 +81,44 @@ class FarmerScene: SKScene {
     
     override func update(_ currentTime: TimeInterval) {
         updatePlayer()
+        updateFarmer()
     }
     
+    func didBegin(_ contact: SKPhysicsContact) {
+        guard let nodeA = contact.bodyA.node, let nodeB = contact.bodyB.node else { return }
+        let nodes = [nodeA, nodeB]
+        
+        
+        let egg = nodes.first { $0.userData?["type"] as? String == "egg" }
+        let enemy = nodes.first { $0.userData?["type"] as? String == "enemy" }
+                
+        if let enemy = enemy, let hp = enemy.userData?["hp"] as? Int, egg?.userData?["enemy"] as? Bool == false {
+            if hp <= 1 {
+                enemy.run(SKAction.sequence([
+                    SKAction.fadeOut(withDuration: 1.0),
+                    SKAction.removeFromParent()
+                ]))
+            } else {
+                enemy.userData?["hp"] = hp - 1
+            }
+        }
+        
+
+        health -= 1
+        if health < 1 {
+            print("Game over")
+            
+            view?.presentScene(GameOverScene.newGameScene(viewModel), transition: SKTransition.crossFade(withDuration: 1))
+        }
+        
+        if let egg = egg {
+            egg.run(SKAction.sequence([
+                SKAction.setTexture(SKTexture(imageNamed: "Egg Broken")),
+                SKAction.fadeOut(withDuration: 1.0),
+                SKAction.removeFromParent()
+            ]))
+        }
+    }
     
     func setDirection(_ vector: CGSize) {
         activeKeys.remove(.rightArrow)
@@ -126,11 +194,63 @@ class FarmerScene: SKScene {
                 tileNode.physicsBody = SKPhysicsBody(rectangleOf: modifiedSize)
                 tileNode.physicsBody?.isDynamic = false
                 tileNode.physicsBody?.categoryBitMask = PhysicsCategory.building
-                tileNode.physicsBody?.collisionBitMask = 0xFFFF
-                tileNode.physicsBody?.contactTestBitMask = 0xFFFF
+                tileNode.physicsBody?.collisionBitMask = PhysicsCategory.player
+                tileNode.physicsBody?.contactTestBitMask = PhysicsCategory.player
 
                 addChild(tileNode)
             }
         }
+    }
+    private func updateFarmer() {
+        guard currentAction == nil else {
+            return
+        }
+        let currentAction: SKAction
+        switch lastActionType {
+        case .start, .shoot:
+            let minX = childNode(withName: "min_x")!.position.x
+            let maxX = childNode(withName: "max_x")!.position.x
+            let x = ((CGFloat(arc4random()) / CGFloat(UInt32.max)) * (maxX - minX)) + minX
+            let dx = x - farmer.position.x
+            currentAction = SKAction.group([
+                .run { [weak self] in self?.farmer.setDirection(CGVector(dx: dx, dy: 0))},
+                .moveTo(x: x, duration: 2)
+            ])
+            self.lastActionType = .seek
+        case .seek:
+            currentAction = SKAction.group([
+                .animate(with: [SKTexture(imageNamed: "Farmer_Shooting")], timePerFrame: 1),
+                fireAction,
+                .run { [weak self] in self?.createProjectiles() }
+            ])
+            self.lastActionType = .shoot
+        }
+        self.currentAction = currentAction
+        farmer.run(currentAction, completion: {
+            self.lastAction = currentAction
+            self.currentAction = nil
+        })
+    }
+    
+    private func createProjectiles() {
+        let node = SKSpriteNode(imageNamed: "Egg")
+        node.userData = ["type": "egg", "enemy": true]
+        node.size = Dimension.tileSize
+        node.position = farmer.position
+        node.physicsBody = physicsBody()
+        node.physicsBody?.isDynamic = true
+        node.physicsBody?.affectedByGravity = false
+        node.physicsBody?.categoryBitMask = PhysicsCategory.enemyProjectile
+        node.physicsBody?.collisionBitMask = PhysicsCategory.player
+        node.physicsBody?.contactTestBitMask = PhysicsCategory.player
+
+        node.physicsBody?.velocity = CGVector(dx: 0, dy: -400)
+
+        addChild(node)
+    }
+    
+    
+    private func physicsBody() -> SKPhysicsBody {
+        return SKPhysicsBody(rectangleOf: Dimension.tileSize.applying(.identity.scaledBy(x: 0.8, y: 0.8)))
     }
 }
